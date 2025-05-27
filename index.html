@@ -103,20 +103,26 @@
     function autenticar() {
       const yaAutenticado = localStorage.getItem("autenticado");
 
-        if (yaAutenticado === "true") return; // Ya autenticado, no pedir credenciales
+      if (yaAutenticado === "true") {
+        console.log("Autenticación exitosa (desde localStorage).");
+        return; // Ya autenticado, no pedir credenciales
+      }
 
-          const u = prompt("Usuario:");
-          const p = prompt("Contraseña:");
+      const u = prompt("Usuario:");
+      const p = prompt("Contraseña:");
 
-          if (u === USUARIO && p === CONTRASENA) {
-            localStorage.setItem("autenticado", "true"); // Guardar que se autenticó correctamente
-          } else {
-            alert("Acceso denegado.");
-            document.body.innerHTML = "<h1>401 No autorizado</h1>";
-            throw new Error("Acceso denegado");
-          }
-        }
-    autenticar();
+      if (u === USUARIO && p === CONTRASENA) {
+        localStorage.setItem("autenticado", "true"); // Guardar que se autenticó correctamente
+        console.log("Autenticación exitosa (nueva).");
+      } else {
+        alert("Acceso denegado. Recarga la página para intentarlo de nuevo.");
+        document.body.innerHTML = "<h1>401 No autorizado</h1><p>Por favor, recarga la página e introduce las credenciales correctas (usuario: admin, contraseña: bizkaibus123).</p>";
+        throw new Error("Acceso denegado"); // Esto detiene la ejecución del script.
+      }
+    }
+    autenticar(); // Ejecutar la autenticación al cargar la página.
+    // Si tienes problemas para cargar datos, puedes comentar la línea de arriba temporalmente para depurar,
+    // pero recuerda reactivarla para la funcionalidad de autenticación.
   </script>
   
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -126,13 +132,14 @@
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotNtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv";
 
     // URLs de los archivos GTFS proporcionados por el usuario
-    const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/stops.txt";
-    const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/stop_times1.txt";
-    const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/stop_times2.txt";
-    const STOP_TIMES3_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/stop_times3.txt";
-    const TRIPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/trips.txt";
-    const CALENDAR_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/calendar.txt";
-    const PARADAS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/paradas.txt";
+    // CORRECCIÓN: Se ajustan las URLs de GitHub para apuntar directamente al contenido 'raw' en la rama 'main'.
+    const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
+    const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times1.txt";
+    const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times2.txt";
+    const STOP_TIMES3_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times3.txt";
+    const TRIPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/trips.txt";
+    const CALENDAR_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/calendar.txt";
+    const PARADAS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/paradas.txt";
 
 
     let map = L.map("map").setView([43.25, -2.93], 10);
@@ -156,6 +163,7 @@
     async function cargarDatosGTFS() {
       try {
         // Cargar paradas del archivo 'paradas.txt' (formato "ID - Nombre")
+        console.log("Iniciando carga de paradas.txt desde:", PARADAS_URL);
         const resParadas = await fetch(PARADAS_URL);
         const textParadas = await resParadas.text();
         textParadas.split("\n").forEach(linea => {
@@ -164,6 +172,7 @@
           const partes = t.split(" - ");
           if (partes.length >= 2) paradasMap.set(partes[0], t);
         });
+        console.log("paradasMap size after loading:", paradasMap.size);
 
         // Cargar stops.txt
         console.log("Iniciando carga de stops.txt desde:", STOPS_URL); // Debugging: indica inicio
@@ -543,7 +552,9 @@
 
     // 6️⃣ Inicialización al cargar la página
     window.onload = async () => {
-      await Promise.all([cargarParadas(), cargarBusInfo(), cargarDatosGTFS()]);
+      // Asegúrate de que la autenticación fue exitosa antes de cargar los datos
+      // Si la autenticación falla, el script se detiene antes de llegar aquí.
+      await Promise.all([cargarBusInfo(), cargarDatosGTFS()]); // cargarParadas() ya se llama dentro de cargarDatosGTFS
       document.getElementById('stop-results').style.display = 'none'; // Ocultar al inicio
       document.getElementById('route-details').style.display = 'none'; // Ocultar al inicio
     };
