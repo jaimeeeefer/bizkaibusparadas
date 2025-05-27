@@ -133,13 +133,13 @@
 
     // URLs de los archivos GTFS proporcionados por el usuario
     // CORRECCIÓN: Se ajustan las URLs de GitHub para apuntar directamente al contenido 'raw' en la rama 'main'.
+    // Y se elimina la constante PARADAS_URL ya que esa información se obtendrá de stops.txt
     const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
     const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times1.txt";
     const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times2.txt";
     const STOP_TIMES3_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times3.txt";
     const TRIPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/trips.txt";
     const CALENDAR_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/calendar.txt";
-    const PARADAS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/paradas.txt";
 
 
     let map = L.map("map").setView([43.25, -2.93], 10);
@@ -148,7 +148,7 @@
     }).addTo(map);
 
     let markers = [];
-    let paradasMap = new Map(); // stop_id -> "stop_id - stop_name" (desde paradas.txt)
+    // let paradasMap = new Map(); // Ya no se necesita si toda la info viene de stopsData
     let stopsData = new Map(); // stop_id -> { stop_name, stop_lat, stop_lon } (desde stops.txt)
     let busInfoMap = new Map(); // VehicleRef → { matricula, modelo }
     let stopTimesData = []; // Array of stop_time objects (desde stop_times1.txt, stop_times2.txt, stop_times3.txt)
@@ -162,17 +162,7 @@
     // 1️⃣ Cargar datos GTFS
     async function cargarDatosGTFS() {
       try {
-        // Cargar paradas del archivo 'paradas.txt' (formato "ID - Nombre")
-        console.log("Iniciando carga de paradas.txt desde:", PARADAS_URL);
-        const resParadas = await fetch(PARADAS_URL);
-        const textParadas = await resParadas.text();
-        textParadas.split("\n").forEach(linea => {
-          const t = linea.trim();
-          if (!t) return;
-          const partes = t.split(" - ");
-          if (partes.length >= 2) paradasMap.set(partes[0], t);
-        });
-        console.log("paradasMap size after loading:", paradasMap.size);
+        // La carga de paradas.txt ha sido eliminada. Ahora toda la info de parada vendrá de stops.txt
 
         // Cargar stops.txt
         console.log("Iniciando carga de stops.txt desde:", STOPS_URL); // Debugging: indica inicio
@@ -331,7 +321,7 @@
           const vref = act.querySelector("VehicleRef")?.textContent.trim();
           const lat = parseFloat(act.querySelector("Latitude")?.textContent);
           const lon = parseFloat(act.querySelector("Longitude")?.textContent);
-          const sp = act.querySelector("StopPointRef")?.textContent.trim();
+          const sp = act.querySelector("StopPointRef")?.textContent.trim(); // Este es el stop_id
 
           if (!jref || !vref || isNaN(lat) || isNaN(lon)) continue;
 
@@ -345,12 +335,12 @@
           );
           if (!coincide) continue;
 
-          // Nombre de parada
+          // Nombre de parada (ahora desde stopsData)
           let paradaTexto = "Parada desconocida";
-          if (sp) {
-            const numSp = extraerNumero(sp);
-            if (numSp && paradasMap.has(numSp)) {
-              paradaTexto = paradasMap.get(numSp);
+          if (sp) { // Si hay un StopPointRef
+            const stopInfo = stopsData.get(sp); // Usar el stop_id directamente
+            if (stopInfo) {
+              paradaTexto = `${stopInfo.stop_name} (${sp})`; // Formato "Nombre (ID)"
             }
           }
 
@@ -396,7 +386,7 @@
         // **Este es el punto clave:** verificar si el stopId está en stopsData
         if (!stopsData.has(stopId)) {
             console.error(`La parada con ID "${stopId}" NO se encontró en stopsData.`); // Debugging: log detallado
-            console.log("stopsData keys:", Array.from(stopsData.keys()).slice(0, 20)); // Debugging: mostrar algunas claves
+            console.log("stopsData keys (first 20):", Array.from(stopsData.keys()).slice(0, 20)); // Debugging: mostrar algunas claves
             return alert("Parada no encontrada. Introduce un ID de parada válido.");
         }
         console.log(`La parada con ID "${stopId}" SE encontró en stopsData.`); // Debugging: confirmación
@@ -554,7 +544,7 @@
     window.onload = async () => {
       // Asegúrate de que la autenticación fue exitosa antes de cargar los datos
       // Si la autenticación falla, el script se detiene antes de llegar aquí.
-      await Promise.all([cargarBusInfo(), cargarDatosGTFS()]); // cargarParadas() ya se llama dentro de cargarDatosGTFS
+      await Promise.all([cargarBusInfo(), cargarDatosGTFS()]); 
       document.getElementById('stop-results').style.display = 'none'; // Ocultar al inicio
       document.getElementById('route-details').style.display = 'none'; // Ocultar al inicio
     };
