@@ -129,11 +129,9 @@
   <script>
     // URL de tu hoja publicada como TSV
     const SHEET_TSV_URL =
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotNtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv";
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotTtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv";
 
     // URLs de los archivos GTFS proporcionados por el usuario
-    // CORRECCIÓN: Se ajustan las URLs de GitHub para apuntar directamente al contenido 'raw' en la rama 'main'.
-    // Y se elimina la constante PARADAS_URL ya que esa información se obtendrá de stops.txt
     const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
     const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times1.txt";
     const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times2.txt";
@@ -148,7 +146,6 @@
     }).addTo(map);
 
     let markers = [];
-    // let paradasMap = new Map(); // Ya no se necesita si toda la info viene de stopsData
     let stopsData = new Map(); // stop_id -> { stop_name, stop_lat, stop_lon } (desde stops.txt)
     let busInfoMap = new Map(); // VehicleRef → { matricula, modelo }
     let stopTimesData = []; // Array of stop_time objects (desde stop_times1.txt, stop_times2.txt, stop_times3.txt)
@@ -162,32 +159,30 @@
     // 1️⃣ Cargar datos GTFS
     async function cargarDatosGTFS() {
       try {
-        // La carga de paradas.txt ha sido eliminada. Ahora toda la info de parada vendrá de stops.txt
-
         // Cargar stops.txt
-        console.log("Iniciando carga de stops.txt desde:", STOPS_URL); // Debugging: indica inicio
+        console.log("Iniciando carga de stops.txt desde:", STOPS_URL);
         const resStops = await fetch(STOPS_URL);
         const textStops = await resStops.text();
-        console.log("Raw stops.txt content (first 200 chars):", textStops.substring(0, 200)); // Debugging: ver el inicio del contenido
+        console.log("Raw stops.txt content (first 200 chars):", textStops.substring(0, 200));
         
         const rowsStops = textStops.trim().split("\n").map(row => row.split(","));
-        console.log("Parsed stops rows (first 5, including header):", rowsStops.slice(0, 5)); // Debugging: ver las primeras filas parseadas
+        console.log("Parsed stops rows (first 5, including header):", rowsStops.slice(0, 5));
         
-        rowsStops.slice(1).forEach(row => { // Saltar la cabecera
-          const stop_id = row[0]?.trim(); // Asegurarse de trim() también aquí por si hay espacios
-          if (stop_id && row.length >= 6) { // Asegurarse que stop_id existe y hay suficientes columnas
+        rowsStops.slice(1).forEach(row => {
+          const stop_id = row[0]?.trim();
+          if (stop_id && row.length >= 6) {
               stopsData.set(stop_id, {
                 stop_name: row[2]?.trim(),
                 stop_lat: parseFloat(row[4]),
                 stop_lon: parseFloat(row[5]),
               });
           } else {
-              console.warn("Skipping malformed or incomplete row in stops.txt:", row); // Debugging: alerta sobre filas problemáticas
+              console.warn("Skipping malformed or incomplete row in stops.txt:", row);
           }
         });
-        console.log("stopsData map size after loading:", stopsData.size); // Debugging: tamaño del mapa
-        console.log("Example stop '1' from stopsData:", stopsData.get("1")); // Debugging: verificar una parada conocida
-        console.log("Example stop '4' from stopsData:", stopsData.get("4")); // Debugging: verificar otra parada conocida
+        console.log("stopsData map size after loading:", stopsData.size);
+        console.log("Example stop '1' from stopsData:", stopsData.get("1"));
+        console.log("Example stop '4' from stopsData:", stopsData.get("4"));
 
         // Cargar stop_times.txt (los tres archivos)
         const stopTimesPromises = [
@@ -199,14 +194,13 @@
 
         stopTimesTexts.forEach(text => {
             const rowsStopTimes = text.trim().split("\n").map(row => row.split(","));
-            rowsStopTimes.slice(1).forEach(row => { // Saltar la cabecera si existe
-                // Asegurarse de que el array row tenga suficientes elementos antes de acceder a ellos
+            rowsStopTimes.slice(1).forEach(row => {
                 if (row.length >= 5) {
                     stopTimesData.push({
                         trip_id: row[0]?.trim(),
                         arrival_time: row[1]?.trim(),
                         departure_time: row[2]?.trim(),
-                        stop_id: row[3]?.trim(), // Trim stop_id aquí también
+                        stop_id: row[3]?.trim(),
                         stop_sequence: parseInt(row[4]),
                     });
                 }
@@ -220,8 +214,8 @@
         const textTrips = await resTrips.text();
         const rowsTrips = textTrips.trim().split("\n").map(row => row.split(","));
         rowsTrips.slice(1).forEach(row => {
-          if (row.length >= 8) { // Asegurarse de que hay suficientes columnas
-              tripsData.set(row[2]?.trim(), { // trip_id
+          if (row.length >= 8) {
+              tripsData.set(row[2]?.trim(), {
                 route_id: row[0]?.trim(),
                 service_id: row[1]?.trim(),
                 trip_headsign: row[3]?.trim(),
@@ -237,8 +231,8 @@
         const textCalendar = await resCalendar.text();
         const rowsCalendar = textCalendar.trim().split("\n").map(row => row.split(","));
         rowsCalendar.slice(1).forEach(row => {
-            if (row.length >= 10) { // Asegurarse de que hay suficientes columnas
-                calendarData.set(row[0]?.trim(), { // service_id
+            if (row.length >= 10) {
+                calendarData.set(row[0]?.trim(), {
                     monday: parseInt(row[1]),
                     tuesday: parseInt(row[2]),
                     wednesday: parseInt(row[3]),
@@ -376,20 +370,19 @@
     // 4️⃣ Nueva función para buscar buses por parada
     async function buscarBusesPorParada() {
         const stopIdInput = document.getElementById("parada").value.trim();
-        console.log("Input de parada:", `"${stopIdInput}"`); // Debugging: qué valor se está usando
+        console.log("Input de parada:", `"${stopIdInput}"`);
         if (!stopIdInput) {
             return alert("Introduce un número de parada válido.");
         }
 
-        const stopId = stopIdInput; // El ID de parada ya es el número
+        const stopId = stopIdInput;
         
-        // **Este es el punto clave:** verificar si el stopId está en stopsData
         if (!stopsData.has(stopId)) {
-            console.error(`La parada con ID "${stopId}" NO se encontró en stopsData.`); // Debugging: log detallado
-            console.log("stopsData keys (first 20):", Array.from(stopsData.keys()).slice(0, 20)); // Debugging: mostrar algunas claves
+            console.error(`La parada con ID "${stopId}" NO se encontró en stopsData.`);
+            console.log("stopsData keys (first 20):", Array.from(stopsData.keys()).slice(0, 20));
             return alert("Parada no encontrada. Introduce un ID de parada válido.");
         }
-        console.log(`La parada con ID "${stopId}" SE encontró en stopsData.`); // Debugging: confirmación
+        console.log(`La parada con ID "${stopId}" SE encontró en stopsData.`);
 
         clearMapElements();
         document.getElementById('route-details').style.display = 'none';
@@ -408,7 +401,6 @@
 
         const upcomingBuses = [];
 
-        // Filtrar stopTimes para la parada actual
         const stopTimesAtThisStop = stopTimesData.filter(st => st.stop_id === stopId);
         console.log(`stopTimesAtThisStop para ID ${stopId}:`, stopTimesAtThisStop.length, "entradas.");
 
@@ -430,13 +422,13 @@
 
             let runsToday = false;
             switch (currentDayOfWeek) {
-                case 0: runsToday = service.sunday === 1; break;
-                case 1: runsToday = service.monday === 1; break;
-                case 2: runsToday = service.tuesday === 1; break;
-                case 3: runsToday = service.wednesday === 1; break;
-                case 4: runsToday = service.thursday === 1; break;
-                case 5: runsToday = service.friday === 1; break;
-                case 6: runsToday = service.saturday === 1; break;
+                case 0: runsToday = (service.sunday === 1 || service.sunday === 0); break; // MODIFICADO
+                case 1: runsToday = (service.monday === 1 || service.monday === 0); break; // MODIFICADO
+                case 2: runsToday = (service.tuesday === 1 || service.tuesday === 0); break; // MODIFICADO
+                case 3: runsToday = (service.wednesday === 1 || service.wednesday === 0); break; // MODIFICADO
+                case 4: runsToday = (service.thursday === 1 || service.thursday === 0); break; // MODIFICADO
+                case 5: runsToday = (service.friday === 1 || service.friday === 0); break; // MODIFICADO
+                case 6: runsToday = (service.saturday === 1 || service.saturday === 0); break; // MODIFICADO
             }
             if (!runsToday) continue;
 
@@ -447,7 +439,7 @@
                     hora: st.departure_time,
                     destino: trip.trip_headsign,
                     trip_id: st.trip_id,
-                    shape_id: trip.shape_id // Guardar shape_id para dibujar la ruta
+                    shape_id: trip.shape_id
                 });
             }
         }
@@ -466,7 +458,7 @@
                 map.setView([stopInfo.stop_lat, stopInfo.stop_lon], 15);
             }
 
-            upcomingBuses.slice(0, 10).forEach(bus => { // Mostrar los 10 próximos
+            upcomingBuses.slice(0, 10).forEach(bus => {
                 const busOption = document.createElement("div");
                 busOption.classList.add("bus-option");
                 busOption.innerHTML = `
@@ -484,8 +476,8 @@
 
     // 5️⃣ Función para mostrar el recorrido y horarios de un bus específico
     async function mostrarRecorrido(tripId, shapeId) {
-        clearMapElements(); // Limpiar marcadores y polilíneas anteriores
-        document.getElementById('stop-results').style.display = 'none'; // Ocultar lista de próximos buses
+        clearMapElements();
+        document.getElementById('stop-results').style.display = 'none';
         document.getElementById('route-details').style.display = 'block';
 
         const trip = tripsData.get(tripId);
@@ -530,7 +522,7 @@
 
         // Dibujar la polilínea de la ruta
         if (polylinePoints.length > 0) {
-            const color = COLORS[Math.floor(Math.random() * COLORS.length)]; // Color aleatorio
+            const color = COLORS[Math.floor(Math.random() * COLORS.length)];
             const polyline = L.polyline(polylinePoints, { color: color, weight: 5, opacity: 0.7 }).addTo(map);
             linePolylines.push(polyline);
             map.fitBounds(bounds, { padding: [50, 50] });
@@ -542,11 +534,9 @@
 
     // 6️⃣ Inicialización al cargar la página
     window.onload = async () => {
-      // Asegúrate de que la autenticación fue exitosa antes de cargar los datos
-      // Si la autenticación falla, el script se detiene antes de llegar aquí.
       await Promise.all([cargarBusInfo(), cargarDatosGTFS()]); 
-      document.getElementById('stop-results').style.display = 'none'; // Ocultar al inicio
-      document.getElementById('route-details').style.display = 'none'; // Ocultar al inicio
+      document.getElementById('stop-results').style.display = 'none';
+      document.getElementById('route-details').style.display = 'none';
     };
   </script>
 </body>
