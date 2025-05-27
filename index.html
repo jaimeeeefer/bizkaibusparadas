@@ -83,6 +83,8 @@
     <button onclick="buscarBusesPorLinea()">Buscar Línea</button>
     <input type="text" id="parada" placeholder="Introduce nº de parada (ej: 123)" />
     <button onclick="buscarBusesPorParada()">Buscar Parada</button>
+    <input type="text" id="numBus" placeholder="Introduce nº de bus (ej: 1514)" />
+    <button onclick="buscarBusPorNumero()">Buscar Bus</button>
   </div>
   <div id="stop-results">
     <h2>Próximos autobuses en la parada:</h2>
@@ -126,7 +128,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     // URL de tu hoja publicada como TSV
-    const SHEET_TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotNtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv"; // URL ACTUALIZADA
+    const SHEET_TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotTtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv"; // URL ACTUALIZADA
 
     // URLs de los archivos GTFS proporcionados por el usuario
     const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
@@ -361,7 +363,7 @@
           if (sp) {
             const stopInfo = stopsData.get(sp);
             if (stopInfo) {
-              paradaTexto = `${stopInfo.stop_name}`; // Modificado para evitar duplicado
+              paradaTexto = `${stopInfo.stop_name}`; 
             }
           }
 
@@ -483,9 +485,8 @@
             const stopInfo = stopsData.get(stopId);
             if (stopInfo) {
                 const stopMarker = L.marker([stopInfo.stop_lat, stopInfo.stop_lon]).addTo(map);
-                stopMarker.bindPopup(`<b>Parada:</b> ${stopInfo.stop_name} (${stopId})`).openPopup();
-                markers.push(stopMarker); // Añado este marcador a `markers` aunque se podría añadir a `stopMarkers`
-                                          // si quisieramos borrarlo selectivamente mas tarde.
+                stopMarker.bindPopup(`<b>Parada:</b> ${stopInfo.stop_name}`).openPopup(); // CORREGIDO AQUÍ
+                markers.push(stopMarker); 
                 map.setView([stopInfo.stop_lat, stopInfo.stop_lon], 15);
             }
 
@@ -510,9 +511,14 @@
     }
 
     // Función que localiza un bus en tiempo real y lo marca con el icono de bus rojo
-    async function localizarBusEnTiempoReal(targetTripId) {
-        console.log(`Buscando ubicación en tiempo real para trip_id: ${targetTripId}`);
-        
+    async function localizarBusEnTiempoReal(targetTripId = null, targetVehicleRef = null) {
+        // Lógica de validación
+        if (!targetTripId && !targetVehicleRef) {
+            console.error("localizarBusEnTiempoReal: Se requiere targetTripId o targetVehicleRef.");
+            alert("No se puede localizar el bus sin un identificador.");
+            return;
+        }
+
         // Si ya hay un marcador de bus en tiempo real, lo eliminamos antes de añadir el nuevo.
         if (realTimeBusMarker) {
             map.removeLayer(realTimeBusMarker);
@@ -529,58 +535,93 @@
             let currentBusLat, currentBusLon;
 
             for (let act of actividades) {
-                const jref = act.querySelector("VehicleJourneyRef")?.textContent.trim();
-                const vref = act.querySelector("VehicleRef")?.textContent.trim();
+                const jref = act.querySelector("VehicleJourneyRef")?.textContent.trim(); // Trip ID
+                const vref = act.querySelector("VehicleRef")?.textContent.trim(); // VehicleRef (número de bus)
                 const lat = parseFloat(act.querySelector("Latitude")?.textContent);
                 const lon = parseFloat(act.querySelector("Longitude")?.textContent);
                 const spRef = act.querySelector("StopPointRef")?.textContent.trim();
 
-                if (jref === targetTripId && !isNaN(lat) && !isNaN(lon)) {
-                    const infoBus = busInfoMap.get(vref) || { matricula: "—", modelo: "—", fecha: "—"};
-                    let paradaActualNombre = "Desconocida";
-                    if (spRef && stopsData.has(spRef)) {
-                        paradaActualNombre = stopsData.get(spRef).stop_name;
-                    }
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    // Condición para encontrar el bus: por tripId o por VehicleRef
+                    const condicionCumplida = 
+                        (targetTripId && jref === targetTripId) ||
+                        (targetVehicleRef && vref === targetVehicleRef);
 
-                    // Crea el marcador con el icono de bus rojo
-                    realTimeBusMarker = L.marker([lat, lon], { icon: busIcon }).addTo(map);
-                    realTimeBusMarker.bindPopup(`
-                        <b>¡Autobús en tiempo real!</b><br>
-                        <b>Línea:</b> ${tripsData.get(targetTripId)?.route_id || 'N/A'}<br>
-                        <b>Destino:</b> ${tripsData.get(targetTripId)?.trip_headsign || 'N/A'}<br>
-                        <b>Bus Nº:</b> ${vref}<br>
-                        <b>Matrícula:</b> ${infoBus.matricula}<br>
-                        <b>Modelo:</b> ${infoBus.modelo}<br>
-                        <b>En parada:</b> ${paradaActualNombre} 
-                    `).openPopup();
-                    
-                    busEncontrado = true;
-                    currentBusLat = lat;
-                    currentBusLon = lon;
-                    console.log("Autobús en tiempo real localizado:", { tripId: jref, lat, lon, vref });
-                    break;
+                    if (condicionCumplida) {
+                        const infoBus = busInfoMap.get(vref) || { matricula: "—", modelo: "—", fecha: "—"};
+                        let paradaActualNombre = "Desconocida";
+                        if (spRef && stopsData.has(spRef)) {
+                            paradaActualNombre = stopsData.get(spRef).stop_name;
+                        }
+
+                        // Obtener Route ID y Headsign si no vienen del targetTripId
+                        let lineaDisplay = 'N/A';
+                        let destinoDisplay = 'N/A';
+                        if (jref && tripsData.has(jref)) {
+                            lineaDisplay = tripsData.get(jref).route_id || 'N/A';
+                            destinoDisplay = tripsData.get(jref).trip_headsign || 'N/A';
+                        }
+                        
+                        // Crea el marcador con el icono de bus rojo
+                        realTimeBusMarker = L.marker([lat, lon], { icon: busIcon }).addTo(map);
+                        realTimeBusMarker.bindPopup(`
+                            <b>¡Autobús en tiempo real!</b><br>
+                            <b>Línea:</b> ${lineaDisplay}<br>
+                            <b>Destino:</b> ${destinoDisplay}<br>
+                            <b>Bus Nº:</b> ${vref}<br>
+                            <b>Matrícula:</b> ${infoBus.matricula}<br>
+                            <b>Modelo:</b> ${infoBus.modelo}<br>
+                            <b>En parada:</b> ${paradaActualNombre} (${spRef || 'N/A'})
+                        `).openPopup();
+                        
+                        busEncontrado = true;
+                        currentBusLat = lat;
+                        currentBusLon = lon;
+                        console.log("Autobús en tiempo real localizado:", { tripId: jref, vref: vref, lat, lon });
+                        break;
+                    }
                 }
             }
 
             if (!busEncontrado) {
-                alert(`No se encontró el autobús con el trip ID ${targetTripId} en tiempo real. Puede que no esté circulando actualmente o no se estén recibiendo sus datos.`);
-                console.warn(`Autobús con trip ID ${targetTripId} NO encontrado en el feed en tiempo real.`);
+                let msg = `No se encontró el autobús`;
+                if (targetTripId) msg += ` con el trip ID ${targetTripId}`;
+                if (targetVehicleRef) msg += ` con el número ${targetVehicleRef}`;
+                msg += ` en tiempo real. Puede que no esté circulando actualmente o no se estén recibiendo sus datos.`;
+                alert(msg);
+                console.warn(msg);
             } else {
                 // Ajustar el mapa para incluir el bus en tiempo real junto con el recorrido y paradas.
-                // Si ya había bounds de las paradas, los extendemos. Si no, creamos unos nuevos solo con el bus.
                 let currentBounds = map.getBounds();
-                if (currentBounds.isValid()) {
-                    currentBounds.extend([currentBusLat, currentBusLon]);
+                if (currentBounds.isValid() && (currentBounds.contains([currentBusLat, currentBusLon]))) {
+                    // Si el bus ya está en la vista actual (por un recorrido o parada), no cambiamos el zoom
                 } else {
-                    currentBounds = L.latLngBounds([currentBusLat, currentBusLon]);
+                    map.setView([currentBusLat, currentBusLon], 15); // Zoom a la ubicación del bus
                 }
-                map.fitBounds(currentBounds, { padding: [50, 50] });
             }
 
         } catch (e) {
             console.error("Error al localizar el bus en tiempo real:", e);
             alert("Error al intentar obtener la ubicación en tiempo real del autobús.");
         }
+    }
+
+    async function buscarBusPorNumero() {
+        const numBus = document.getElementById("numBus").value.trim();
+        if (!numBus) {
+            alert("Introduce un número de bus válido.");
+            return;
+        }
+
+        // Limpia todos los elementos anteriores del mapa y los resultados de búsqueda
+        clearMapElements();
+        clearLineSearchMarkers();
+        document.getElementById('stop-results').style.display = 'none';
+        document.getElementById('route-details').style.display = 'none';
+
+        // Llama a localizarBusEnTiempoReal con el número de bus
+        // Pasamos null para tripId y el numBus para targetVehicleRef
+        await localizarBusEnTiempoReal(null, numBus);
     }
 
 
@@ -623,7 +664,7 @@
             const stopInfo = stopsData.get(st.stop_id);
             if (stopInfo) {
                 const li = document.createElement("li");
-                li.innerHTML = `<b>${st.arrival_time}</b> - ${stopInfo.stop_name} (${st.stop_id})`;
+                li.innerHTML = `<b>${st.arrival_time}</b> - ${stopInfo.stop_name}`; // CORREGIDO AQUÍ
                 routeStopList.appendChild(li);
 
                 const marker = L.marker([stopInfo.stop_lat, stopInfo.stop_lon]).addTo(map);
@@ -633,7 +674,7 @@
                     <b>Hora de llegada:</b> ${st.arrival_time}<br>
                     <b>Hora de salida:</b> ${st.departure_time}
                 `);
-                stopMarkers.push(marker); // Guardar en el array de marcadores de parada
+                stopMarkers.push(marker); 
                 bounds.extend([stopInfo.stop_lat, stopInfo.stop_lon]);
                 polylinePoints.push([stopInfo.stop_lat, stopInfo.stop_lon]);
             }
@@ -650,7 +691,7 @@
         }
 
         // Llamar a la función para localizar el bus en tiempo real DESPUÉS de dibujar el recorrido y paradas
-        localizarBusEnTiempoReal(tripId);
+        localizarBusEnTiempoReal(tripId, null); // Pasa tripId, pero no numBus
     }
 
     window.onload = async () => {
