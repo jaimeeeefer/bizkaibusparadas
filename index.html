@@ -166,17 +166,29 @@
         });
 
         // Cargar stops.txt
+        console.log("Iniciando carga de stops.txt desde:", STOPS_URL); // Debugging: indica inicio
         const resStops = await fetch(STOPS_URL);
         const textStops = await resStops.text();
+        console.log("Raw stops.txt content (first 200 chars):", textStops.substring(0, 200)); // Debugging: ver el inicio del contenido
+        
         const rowsStops = textStops.trim().split("\n").map(row => row.split(","));
-        rowsStops.slice(1).forEach(row => {
-          const stop_id = row[0];
-          stopsData.set(stop_id, {
-            stop_name: row[2],
-            stop_lat: parseFloat(row[4]),
-            stop_lon: parseFloat(row[5]),
-          });
+        console.log("Parsed stops rows (first 5, including header):", rowsStops.slice(0, 5)); // Debugging: ver las primeras filas parseadas
+        
+        rowsStops.slice(1).forEach(row => { // Saltar la cabecera
+          const stop_id = row[0]?.trim(); // Asegurarse de trim() también aquí por si hay espacios
+          if (stop_id && row.length >= 6) { // Asegurarse que stop_id existe y hay suficientes columnas
+              stopsData.set(stop_id, {
+                stop_name: row[2]?.trim(),
+                stop_lat: parseFloat(row[4]),
+                stop_lon: parseFloat(row[5]),
+              });
+          } else {
+              console.warn("Skipping malformed or incomplete row in stops.txt:", row); // Debugging: alerta sobre filas problemáticas
+          }
         });
+        console.log("stopsData map size after loading:", stopsData.size); // Debugging: tamaño del mapa
+        console.log("Example stop '1' from stopsData:", stopsData.get("1")); // Debugging: verificar una parada conocida
+        console.log("Example stop '4' from stopsData:", stopsData.get("4")); // Debugging: verificar otra parada conocida
 
         // Cargar stop_times.txt (los tres archivos)
         const stopTimesPromises = [
@@ -192,15 +204,16 @@
                 // Asegurarse de que el array row tenga suficientes elementos antes de acceder a ellos
                 if (row.length >= 5) {
                     stopTimesData.push({
-                        trip_id: row[0],
-                        arrival_time: row[1],
-                        departure_time: row[2],
-                        stop_id: row[3],
+                        trip_id: row[0]?.trim(),
+                        arrival_time: row[1]?.trim(),
+                        departure_time: row[2]?.trim(),
+                        stop_id: row[3]?.trim(), // Trim stop_id aquí también
                         stop_sequence: parseInt(row[4]),
                     });
                 }
             });
         });
+        console.log("Total stopTimes loaded:", stopTimesData.length);
 
 
         // Cargar trips.txt
@@ -209,14 +222,16 @@
         const rowsTrips = textTrips.trim().split("\n").map(row => row.split(","));
         rowsTrips.slice(1).forEach(row => {
           if (row.length >= 8) { // Asegurarse de que hay suficientes columnas
-              tripsData.set(row[2], { // trip_id
-                route_id: row[0],
-                service_id: row[1],
-                trip_headsign: row[3],
-                shape_id: row[7],
+              tripsData.set(row[2]?.trim(), { // trip_id
+                route_id: row[0]?.trim(),
+                service_id: row[1]?.trim(),
+                trip_headsign: row[3]?.trim(),
+                shape_id: row[7]?.trim(),
               });
           }
         });
+        console.log("Total trips loaded:", tripsData.size);
+
 
         // Cargar calendar.txt
         const resCalendar = await fetch(CALENDAR_URL);
@@ -224,7 +239,7 @@
         const rowsCalendar = textCalendar.trim().split("\n").map(row => row.split(","));
         rowsCalendar.slice(1).forEach(row => {
             if (row.length >= 10) { // Asegurarse de que hay suficientes columnas
-                calendarData.set(row[0], { // service_id
+                calendarData.set(row[0]?.trim(), { // service_id
                     monday: parseInt(row[1]),
                     tuesday: parseInt(row[2]),
                     wednesday: parseInt(row[3]),
@@ -232,11 +247,13 @@
                     friday: parseInt(row[5]),
                     saturday: parseInt(row[6]),
                     sunday: parseInt(row[7]),
-                    start_date: row[8],
-                    end_date: row[9]
+                    start_date: row[8]?.trim(),
+                    end_date: row[9]?.trim()
                 });
             }
         });
+        console.log("Total calendar services loaded:", calendarData.size);
+
 
       } catch (e) {
         console.error("Error cargando datos GTFS:", e);
@@ -260,6 +277,8 @@
             });
           }
         });
+        console.log("Total bus info loaded:", busInfoMap.size);
+
       } catch (e) {
         console.error("Error cargando busInfo:", e);
       }
@@ -358,14 +377,20 @@
     // 4️⃣ Nueva función para buscar buses por parada
     async function buscarBusesPorParada() {
         const stopIdInput = document.getElementById("parada").value.trim();
+        console.log("Input de parada:", `"${stopIdInput}"`); // Debugging: qué valor se está usando
         if (!stopIdInput) {
             return alert("Introduce un número de parada válido.");
         }
 
         const stopId = stopIdInput; // El ID de parada ya es el número
+        
+        // **Este es el punto clave:** verificar si el stopId está en stopsData
         if (!stopsData.has(stopId)) {
+            console.error(`La parada con ID "${stopId}" NO se encontró en stopsData.`); // Debugging: log detallado
+            console.log("stopsData keys:", Array.from(stopsData.keys()).slice(0, 20)); // Debugging: mostrar algunas claves
             return alert("Parada no encontrada. Introduce un ID de parada válido.");
         }
+        console.log(`La parada con ID "${stopId}" SE encontró en stopsData.`); // Debugging: confirmación
 
         clearMapElements();
         document.getElementById('route-details').style.display = 'none';
@@ -379,13 +404,14 @@
         const currentYear = now.getFullYear();
         const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
         const currentDay = now.getDate().toString().padStart(2, '0');
-        const currentDate = `${currentYear}${currentMonth}${currentDay}`;
+        const currentDate = `${currentYear}${currentMonth}${currentDay}`; // Formato YYYYMMDD
         const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
         const upcomingBuses = [];
 
         // Filtrar stopTimes para la parada actual
         const stopTimesAtThisStop = stopTimesData.filter(st => st.stop_id === stopId);
+        console.log(`stopTimesAtThisStop para ID ${stopId}:`, stopTimesAtThisStop.length, "entradas.");
 
         for (const st of stopTimesAtThisStop) {
             const trip = tripsData.get(st.trip_id);
