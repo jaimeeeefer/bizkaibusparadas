@@ -125,7 +125,10 @@
   
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const SHEET_TSV_URL = "https://docs.google.com/sheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotTtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv";
+    // URL de tu hoja publicada como TSV
+    const SHEET_TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYeZkna4mwxp3p2azwTgAPcjeSBoUU_rhWW5gVZ7hqotNtojQOHtsjbEnnlJbrijBVwck_kWERE__6/pub?output=tsv"; // URL ACTUALIZADA
+
+    // URLs de los archivos GTFS proporcionados por el usuario
     const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
     const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times1.txt";
     const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times2.txt";
@@ -162,20 +165,7 @@
         popupAnchor: [1, -34],
         shadowSize: [41, 41]
     });
-    // Se podría buscar un icono de autobús real o usar Font Awesome con un customDivIcon si se quiere un icono de bus más explícito.
-    // Ejemplo de icono de bus más explícito (requiere Font Awesome o un SVG/PNG)
-    /*
-    const customBusIcon = L.divIcon({
-        className: 'custom-div-icon',
-        html: '<i class="fas fa-bus" style="color: red; font-size: 24px;"></i>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 30]
-    });
-    // Si usas este, necesitarías añadir Font Awesome al <head>:
-    // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-    */
-
-
+    
     async function cargarDatosGTFS() {
       try {
         console.log("Iniciando carga de stops.txt desde:", STOPS_URL);
