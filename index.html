@@ -184,7 +184,7 @@
             };
         } else {
             const voices = synth.getVoices();
-            spanishVoice = voices.find(voice => voice.lang === 'es-ES' || voice.lang.startsWith('es'));
+            spanishVoice = voices.find(voice => voice.name === 'Jorge' && (voice.lang === 'es-ES' || voice.lang.startsWith('es')));
             console.log("Voces ya disponibles. Voz en español:", spanishVoice ? spanishVoice.name : 'No encontrada');
         }
     }
