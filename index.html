@@ -94,25 +94,20 @@
         color: #ff0000; /* Rojo */
     }
 
-    .bus-option .bus-option-linea {
-        flex-basis: 25%; /* Ancho para la línea */
-        min-width: 150px; /* Ancho mínimo para la línea */
+    .bus-option .bus-option-linea-destino { /* Clase combinada para línea y destino */
+        flex-basis: 80%; /* Más ancho para línea y destino combinados */
+        min-width: 150px; /* Ancho mínimo */
         text-align: left;
-    }
-
-    .bus-option .bus-option-destino {
-        flex-basis: 60%; /* Ancho para el destino */
-        text-align: left; /* Alinear a la izquierda */
-        padding-left: 1em; /* Espacio entre línea y destino */
         overflow: hidden;
-        text-overflow: clip; /* Sin ellipsis, cortar */
+        text-overflow: clip;
     }
     
     .bus-option .bus-option-time { 
-        flex-basis: 15%; /* Ancho para el tiempo */
+        flex-basis: 20%; /* Ancho para el tiempo */
         min-width: 80px; /* Ancho mínimo para el tiempo */
         text-align: right; /* Alinear a la derecha */
         font-size: 1em; /* Tamaño normal para el tiempo */
+        padding-left: 1em; /* Espacio entre destino y tiempo */
     }
 
     /* Mensajes de carga y error */
@@ -442,13 +437,15 @@
 
                 let timeDisplay = bus.estimatedRemainingTime;
                 
-                // Limitar la longitud del destino para que se ajuste al estilo del teletexto
-                let destination = bus.destino.substring(0, 20).toUpperCase(); 
-                // No añadimos ellipsis para cortar como en el cartel real
+                // Formatear la línea para asegurar la "A" y el destino
+                let formattedLineAndDestination = `${bus.linea.toUpperCase()} ${bus.destino.toUpperCase()}`;
+                // Truncar si es demasiado largo
+                if (formattedLineAndDestination.length > 25) { // Ajusta este número según el espacio disponible
+                    formattedLineAndDestination = formattedLineAndDestination.substring(0, 25);
+                }
 
                 busOption.innerHTML = `
-                    <span class="bus-option-linea">${bus.linea.toUpperCase()}</span>
-                    <span class="bus-option-destino">${destination}</span>
+                    <span class="bus-option-linea-destino">${formattedLineAndDestination}</span>
                     <span class="bus-option-time">${timeDisplay}</span>
                 `;
                 busListDiv.appendChild(busOption);
