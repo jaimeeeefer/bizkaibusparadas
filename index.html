@@ -477,7 +477,7 @@
 
             const currentSeconds = timeToSeconds(currentTime);
             // Incluir buses que están por llegar o acaban de pasar (margen de 5 minutos para ">>")
-            if (estimatedDepartureSeconds >= currentSeconds - 120) { 
+            if (estimatedDepartureSeconds >= currentSeconds - 90) { 
                 upcomingBuses.push({
                     linea: trip.route_id,
                     hora: st.departure_time, // Hora programada
