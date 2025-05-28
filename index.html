@@ -24,7 +24,7 @@
       align-items: center;
       background-color: #1a1a1a; /* Fondo casi negro, un poco más suave */
       color: #ff0000; /* Texto rojo brillante */
-      font-size: 3.5em; /* Tamaño de fuente grande - Ajusta este valor */
+      font-size: 4em; /* Tamaño de fuente más grande - Ajusta este valor */
       overflow: hidden; /* Prevenir scrollbars */
       height: 100vh; /* Ocupa toda la altura de la ventana */
       width: 100vw; /* Ocupa todo el ancho de la ventana */
@@ -335,7 +335,7 @@
         const currentYear = now.getFullYear();
         const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
         const currentDay = now.getDate().toString().padStart(2, '0');
-        const currentDate = `${currentYear}${currentMonth}${currentDay}`; // Formato YYYYMMDD
+        const currentDate = `${currentYear}${currentMonth}${currentDay}`; // FormatoYYYYMMDD
         const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
         const realTimeActivities = new Map();
@@ -365,7 +365,7 @@
             if (!isFirstLoad) { // Only show this warning after initial load
                 // Optionally, add a small, non-intrusive message here
             } else { // On first load, show error if RT data is critical
-                busListDiv.innerHTML = `<p class="loading-message">Error al obtener datos en tiempo real. Mostrando horarios programados.</p>`;
+                busListDiv.innerHTML = `<p class="loading-message">Error al obtener datos en tiempo real. Mostrando horarios programados.</p陞`;
             }
         }
 
