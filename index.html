@@ -179,7 +179,7 @@
         if (synth.getVoices().length === 0) {
             synth.onvoiceschanged = () => {
                 const voices = synth.getVoices();
-                spanishVoice = voices.find(voice => voice.name === 'Jorge' && (voice.lang === 'es-ES' || voice.lang.startsWith('es')));
+                spanishVoice = voices.find(voice => voice.lang === 'es-ES' || voice.lang.startsWith('es'));
                 console.log("Voces cargadas. Voz en español:", spanishVoice ? spanishVoice.name : 'No encontrada');
             };
         } else {
@@ -236,7 +236,7 @@
 
         const remainingMinutes = Math.round(remainingSeconds / 60);
 
-        if (remainingMinutes <= 0 && remainingMinutes > -1) { // Considerar "Ahora" si está muy cerca o ya pasó un poco (margen de -2 minutos)
+        if (remainingMinutes <= 0 && remainingMinutes > 0) { // Considerar "Ahora" si está muy cerca o ya pasó un poco (margen de -2 minutos)
             return '<span class="blinking-arrows">>></span>';
         } else if (remainingMinutes < 0) { // Si ya ha pasado significativamente (más de 2 minutos), no mostrar
             return ''; // O puedes poner "Pasado" o similar
