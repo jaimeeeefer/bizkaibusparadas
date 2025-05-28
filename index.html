@@ -179,7 +179,7 @@
         if (synth.getVoices().length === 0) {
             synth.onvoiceschanged = () => {
                 const voices = synth.getVoices();
-                spanishVoice = voices.find(voice => voice.lang === 'es-ES' || voice.lang.startsWith('es'));
+                spanishVoice = voices.find(voice => voice.name === 'Jorge' && (voice.lang === 'es-ES' || voice.lang.startsWith('es')));
                 console.log("Voces cargadas. Voz en español:", spanishVoice ? spanishVoice.name : 'No encontrada');
             };
         } else {
@@ -509,7 +509,7 @@
                 } else if (prevBus.estimatedRemainingTime !== bus.estimatedRemainingTime) {
                     if (bus.estimatedRemainingTime.includes('>>')) {
                         speakText(`Línea ${bus.linea} destino ${bus.destino}. Salida inmediata.`);
-                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 20 && parseInt(prevBus.estimatedRemainingTime) > 20) {
+                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 10 && parseInt(prevBus.estimatedRemainingTime) > 10) {
                         speakText(`Línea ${bus.linea} destino ${bus.destino}. A ${bus.estimatedRemainingTime} minutos.`);
                     }
                 }
@@ -528,14 +528,14 @@
                 let timeDisplay = bus.estimatedRemainingTime;
                 
                 // Formatear la línea para asegurar la "A" y el destino
-                let formattedLineAndDestination = `A${bus.linea.toUpperCase()} ${bus.destino.toUpperCase()}`;
+                let formattedLineAndDestination = `${bus.linea.toUpperCase()} ${bus.destino.toUpperCase()}`;
                 // Truncar si es demasiado largo
                 if (formattedLineAndDestination.length > 25) { // Ajusta este número según el espacio disponible
                     formattedLineAndDestination = formattedLineAndDestination.substring(0, 25);
                 }
 
                 busOption.innerHTML = `
-                    <span class="bus-option-linea-destino">${formattedLineAndDestination}</span>
+                    <span class="bus-option-linea-destino">A${formattedLineAndDestination}</span>
                     <span class="bus-option-time">${timeDisplay}</span>
                 `;
                 busListDiv.appendChild(busOption);
