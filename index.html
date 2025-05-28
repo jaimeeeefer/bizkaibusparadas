@@ -69,20 +69,20 @@
         font-size: 1em; /* Normal font size for time */
     }
 
-    .delay-text-stop-list {
-        font-size: 0.7em; /* Smaller font for delay text */
-        font-style: normal; /* No italic */
+    .delay-text-stop-list { /* This class will no longer be used for display, but kept for logic if needed */
+        font-size: 0.7em; 
+        font-style: normal; 
         margin-left: 5px;
-        display: inline-block; /* To allow padding/margin */
+        display: inline-block; 
     }
     .delay-text-stop-list.delay {
-        color: yellow; /* Yellow for delay, more visible on red */
+        color: yellow; 
     }
     .delay-text-stop-list.advance {
-        color: lime; /* Lime for advance */
+        color: lime; 
     }
     .delay-text-stop-list.on-time { 
-        color: cyan; /* Cyan for on-time */
+        color: cyan; 
     }
     .loading-message {
         color: red;
@@ -100,8 +100,6 @@
   </div>
   
   <script>
-    // No authentication for this public display page
-
     const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
     const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times1.txt";
     const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times2.txt";
@@ -115,7 +113,7 @@
     let stopTimesData = [];
     let calendarData = new Map();
     let calendarDatesData = new Map();
-    let busInfoMap = new Map(); // Keep if needed for any extended info, though not used in simplified display
+    let busInfoMap = new Map(); 
 
     function timeToSeconds(timeStr) {
         if (!timeStr || !/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return 0;
@@ -123,29 +121,29 @@
         return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
     }
 
-    function secondsToTime(totalSeconds) {
+    // Modified to return remaining minutes or 'Ahora'
+    function secondsToRemainingTime(totalSeconds) {
         if (totalSeconds === null || isNaN(totalSeconds)) return "N/A";
         
-        const secondsInDay = 24 * 60 * 60;
-        let days = Math.floor(totalSeconds / secondsInDay);
-        let remainingSeconds = totalSeconds % secondsInDay;
+        const now = new Date();
+        const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        
+        let remainingSeconds = totalSeconds - currentTotalSeconds;
+        
+        // Handle cases where the bus might be for the next day but close to midnight
+        if (remainingSeconds < -12 * 3600) { // If more than 12 hours behind, assume it's for the next day
+            remainingSeconds += 24 * 3600;
+        } else if (remainingSeconds > 12 * 3600 && totalSeconds < currentTotalSeconds) { // If more than 12 hours ahead, but scheduled time was earlier
+            remainingSeconds -= 24 * 3600;
+        }
 
-        if (remainingSeconds < 0) { // Handle negative remainingSeconds if the original totalSeconds was negative
-            remainingSeconds += secondsInDay;
-            days -=1;
+        const remainingMinutes = Math.round(remainingSeconds / 60);
+
+        if (remainingMinutes <= 0) {
+            return "Ahora";
+        } else {
+            return `${remainingMinutes} min`;
         }
-        
-        const h = Math.floor(remainingSeconds / 3600);
-        const m = Math.floor((remainingSeconds % 3600) / 60);
-        // const s = remainingSeconds % 60; // Seconds are not needed for display
-        
-        let timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`; // Only HH:MM
-        if (days > 0) {
-            timeString += ` (+${days}d)`; // Indicate if it rolls over to next day
-        } else if (days < 0) {
-            timeString += ` (${days}d)`; // Indicate if it's from previous day
-        }
-        return timeString;
     }
 
     async function cargarDatosGTFS() {
@@ -341,9 +339,7 @@
             if (!runsToday) continue;
 
             let estimatedDepartureSeconds = timeToSeconds(st.departure_time);
-            let delayStatusText = "";
-            let isBusOnTime = false;
-
+            
             if (realTimeActivities.has(st.trip_id)) {
                 const liveBusData = realTimeActivities.get(st.trip_id);
                 const liveBusStopSchedule = stopTimesData.find(
@@ -359,17 +355,6 @@
                     if (scheduledTimeAtLiveBusStopSeconds > 0 && actualTimeAtLiveBusStopSeconds > 0) {
                         const delayAtLiveBusStopSeconds = actualTimeAtLiveBusStopSeconds - scheduledTimeAtLiveBusStopSeconds;
                         estimatedDepartureSeconds = timeToSeconds(st.departure_time) + delayAtLiveBusStopSeconds;
-                        
-                        const delayMinutes = Math.round(delayAtLiveBusStopSeconds / 60);
-
-                        if (delayMinutes > 1) { 
-                            delayStatusText = `<span class="delay-text-stop-list delay">+${delayMinutes}m</span>`;
-                        } else if (delayMinutes < -1) { 
-                            delayStatusText = `<span class="delay-text-stop-list advance">${delayMinutes}m</span>`;
-                        } else {
-                            isBusOnTime = true;
-                            delayStatusText = `<span class="delay-text-stop-list on-time">En hora</span>`;
-                        }
                     }
                 }
             }
@@ -383,9 +368,7 @@
                     linea: trip.route_id,
                     hora: st.departure_time, // Scheduled time
                     estimatedDepartureSeconds: estimatedDepartureSeconds,
-                    estimatedDepartureTimeDisplay: secondsToTime(estimatedDepartureSeconds), // Estimated time
-                    delayText: delayStatusText,
-                    isBusOnTime: isBusOnTime,
+                    estimatedRemainingTime: secondsToRemainingTime(estimatedDepartureSeconds), // Remaining time
                     destino: trip.trip_headsign,
                     trip_id: st.trip_id,
                 });
@@ -400,7 +383,7 @@
                 const busOption = document.createElement("div");
                 busOption.classList.add("bus-option");
 
-                let timeDisplay = bus.estimatedDepartureTimeDisplay;
+                let timeDisplay = bus.estimatedRemainingTime;
                 
                 // Adjusting destination length to fit the teletext style
                 let destination = bus.destino.substring(0, 20); // Limit destination length
@@ -411,7 +394,7 @@
                 busOption.innerHTML = `
                     <span class="bus-option-linea">${bus.linea}</span>
                     <span class="bus-option-destino">${destination}</span>
-                    <span class="bus-option-time">${timeDisplay} ${bus.delayText}</span>
+                    <span class="bus-option-time">${timeDisplay}</span>
                 `;
                 busListDiv.appendChild(busOption);
             });
