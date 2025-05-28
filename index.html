@@ -24,7 +24,7 @@
       align-items: center;
       background-color: #1a1a1a; /* Fondo casi negro, un poco más suave */
       color: #ff0000; /* Texto rojo brillante */
-      font-size: 4em; /* Tamaño de fuente más grande - Ajusta este valor */
+      font-size: 4em; /* Tamaño de fuente grande para el contenido principal */
       overflow: hidden; /* Prevenir scrollbars */
       height: 100vh; /* Ocupa toda la altura de la ventana */
       width: 100vw; /* Ocupa todo el ancho de la ventana */
@@ -61,7 +61,7 @@
     }
 
     #stop-title {
-      font-size: 1.5em; /* Título de la parada */
+      font-size: 0.8em; /* Tamaño de fuente más pequeño para el título de la parada (relativo al body) */
       color: #ff0000;
       margin: 0.5em 0 1em 0; /* Espaciado del título */
       text-align: left;
@@ -114,14 +114,14 @@
         flex-basis: 20%; /* Ancho para el tiempo */
         min-width: 80px; /* Ancho mínimo para el tiempo */
         text-align: right; /* Alinear a la derecha */
-        font-size: 1em; /* Tamaño normal para el tiempo */
+        font-size: 1em; /* Tamaño normal para el tiempo (relativo al body) */
         padding-left: 1em; /* Espacio entre destino y tiempo */
     }
 
     /* Mensajes de carga y error */
     .loading-message {
         color: #ff0000;
-        font-size: 1.2em;
+        font-size: 1.2em; /* Relativo al tamaño del body */
         margin-top: 2em;
     }
 
@@ -168,6 +168,47 @@
 
     // Variable para controlar si es la primera carga
     let isFirstLoad = true;
+    let previousBuses = []; // Almacenar los buses de la actualización anterior para TTS
+
+    // Variables para Text-to-Speech
+    const synth = window.speechSynthesis;
+    let spanishVoice = null;
+
+    // Cargar voces disponibles y seleccionar una en español
+    function loadVoices() {
+        if (synth.getVoices().length === 0) {
+            synth.onvoiceschanged = () => {
+                const voices = synth.getVoices();
+                spanishVoice = voices.find(voice => voice.lang === 'es-ES' || voice.lang.startsWith('es'));
+                console.log("Voces cargadas. Voz en español:", spanishVoice ? spanishVoice.name : 'No encontrada');
+            };
+        } else {
+            const voices = synth.getVoices();
+            spanishVoice = voices.find(voice => voice.lang === 'es-ES' || voice.lang.startsWith('es'));
+            console.log("Voces ya disponibles. Voz en español:", spanishVoice ? spanishVoice.name : 'No encontrada');
+        }
+    }
+
+    // Función para hablar el texto
+    function speakText(text) {
+        if (!synth) {
+            console.warn("SpeechSynthesis no está disponible en este navegador.");
+            return;
+        }
+
+        // Cancelar cualquier discurso actual para evitar superposiciones
+        synth.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-ES'; // Forzar idioma español
+        if (spanishVoice) {
+            utterance.voice = spanishVoice;
+        }
+        utterance.rate = 0.9; // Un poco más lento para mejor claridad
+        utterance.pitch = 1; // Tono normal
+
+        synth.speak(utterance);
+    }
 
     // Función para convertir un string de tiempo "HH:MM:SS" a segundos desde medianoche
     function timeToSeconds(timeStr) {
@@ -365,7 +406,7 @@
             if (!isFirstLoad) { // Only show this warning after initial load
                 // Optionally, add a small, non-intrusive message here
             } else { // On first load, show error if RT data is critical
-                busListDiv.innerHTML = `<p class="loading-message">Error al obtener datos en tiempo real. Mostrando horarios programados.</p陞`;
+                busListDiv.innerHTML = `<p class="loading-message">Error al obtener datos en tiempo real. Mostrando horarios programados.</p>`;
             }
         }
 
@@ -450,12 +491,37 @@
 
         // Ordenar por tiempo de llegada estimado y filtrar para mostrar solo los 4 próximos
         upcomingBuses.sort((a, b) => a.estimatedDepartureSeconds - b.estimatedDepartureSeconds);
-        
+        const currentBuses = upcomingBuses.slice(0, 4); // Limitar a 4 autobuses
+
+        // TTS: Anunciar cambios
+        if (!isFirstLoad) { // Solo anunciar si no es la primera carga
+            currentBuses.forEach(bus => {
+                const prevBus = previousBuses.find(pb => pb.linea === bus.linea && pb.destino === bus.destino);
+                // Announce if new bus appears or if time changes significantly and it's ">>"
+                if (!prevBus) {
+                    let announcement = `Línea ${bus.linea} a ${bus.destino}. `;
+                    if (bus.estimatedRemainingTime.includes('>>')) {
+                        announcement += "Salida inmediata.";
+                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime))) {
+                        announcement += `${bus.estimatedRemainingTime} minutos.`;
+                    }
+                    speakText(announcement);
+                } else if (prevBus.estimatedRemainingTime !== bus.estimatedRemainingTime) {
+                    if (bus.estimatedRemainingTime.includes('>>')) {
+                        speakText(`Línea ${bus.linea} a ${bus.destino}. Salida inmediata.`);
+                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 5 && parseInt(prevBus.estimatedRemainingTime) > 5) {
+                        speakText(`Línea ${bus.linea} a ${bus.destino}. ${bus.estimatedRemainingTime} minutos.`);
+                    }
+                }
+            });
+        }
+        previousBuses = currentBuses; // Actualizar la lista de buses para la próxima comparación
+
         // Limpiar la lista de autobuses antes de añadir los nuevos, sin un mensaje de carga
         busListDiv.innerHTML = ""; 
 
-        if (upcomingBuses.length > 0) {
-            upcomingBuses.slice(0, 4).forEach(bus => { // Limitar a 4 autobuses
+        if (currentBuses.length > 0) {
+            currentBuses.forEach(bus => {
                 const busOption = document.createElement("div");
                 busOption.classList.add("bus-option");
 
@@ -485,6 +551,9 @@
 
     // Cuando la ventana carga, cargar datos GTFS y buscar buses de la parada de la URL
     window.onload = async () => {
+      // Cargar voces al inicio
+      loadVoices();
+      
       // Mostrar el mensaje de carga inicial antes de cualquier operación
       document.getElementById('bus-list').innerHTML = `<p class="loading-message">Cargando datos iniciales...</p>`;
 
