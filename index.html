@@ -5,101 +5,149 @@
   <title>Bizkaibus en Tiempo Real - Parada</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    /* Estilos generales para emular el cartel de teletexto */
     body {
-      font-family: 'Teletext', monospace; /* Use a monospace font to mimic teletext */
+      font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace; /* Fuentes monoespaciadas para el efecto */
       text-align: center;
-      padding: 1em;
+      padding: 0; /* Sin padding en el body para control total */
       margin: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-color: black; /* Black background for teletext look */
-      color: red; /* Red text for teletext look */
-      font-size: 2.5em; /* Larger font size */
-      overflow: hidden; /* Prevent scrollbars if content overflows slightly */
+      background-color: #1a1a1a; /* Fondo casi negro, un poco más suave */
+      color: #ff0000; /* Texto rojo brillante */
+      font-size: 2.8em; /* Tamaño de fuente grande */
+      overflow: hidden; /* Prevenir scrollbars */
+      height: 100vh; /* Ocupa toda la altura de la ventana */
+      width: 100vw; /* Ocupa todo el ancho de la ventana */
     }
-    #stop-results {
-      margin-top: 1em;
+
+    /* Contenedor principal de la información */
+    #main-container {
       width: 100%;
-      max-width: 1750px; /* Keep max-width for larger screens */
-      text-align: left;
-    }
-    #stop-results h2 {
-      margin-top: 0;
-      color: red;
-      font-size: 1.2em; /* Slightly smaller for title */
-      margin-bottom: 0.5em;
-    }
-    .bus-option {
-      background-color: black; /* No background */
-      border: none; /* No border */
-      margin-bottom: 0.2em; /* Smaller margin between lines */
-      padding: 0.2em 0.5em; /* Smaller padding */
+      max-width: 1920px; /* Ancho máximo para pantallas grandes */
+      height: 100%;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start; /* Alinear arriba */
+      padding: 1em; /* Padding general */
+      box-sizing: border-box;
+    }
+
+    /* Estilos del encabezado con el logo de Bizkaibus */
+    #header {
+      width: 100%;
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: baseline; /* Align text baselines */
-      cursor: default; /* Not clickable for this interface */
-      height: 1.5em; /* Fixed height for each line to control spacing */
+      padding: 0.5em 1em;
+      background: linear-gradient(to right, #008000, #004d00); /* Degradado verde */
+      border-bottom: 2px solid #ff0000; /* Línea roja debajo del encabezado */
+      box-sizing: border-box;
     }
 
-    #stop-results .bus-option span {
-        padding: 0; /* Remove padding */
-        font-weight: bold; /* Bold like teletext */
-        white-space: pre; /* Preserve whitespace for alignment */
+    #bizkaibus-logo {
+      height: 80px; /* Tamaño del logo */
+      vertical-align: middle;
     }
 
-    #stop-results .bus-option .bus-option-linea {
-        flex-basis: 30%; /* Adjust width for line number */
-        min-width: 100px;
+    #stop-title {
+      font-size: 1.5em; /* Título de la parada */
+      color: #ff0000;
+      margin: 0.5em 0 1em 0; /* Espaciado del título */
+      text-align: left;
+      width: 100%; /* Ocupar todo el ancho */
+      padding-left: 1em; /* Indentación para el título */
+      box-sizing: border-box;
+    }
+
+    /* Contenedor de la lista de autobuses */
+    #bus-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      flex-grow: 1; /* Para que ocupe el espacio restante */
+    }
+
+    /* Estilo de cada línea de autobús */
+    .bus-option {
+      background-color: transparent; /* Transparente */
+      border: none; /* Sin borde */
+      margin-bottom: 0.2em; /* Espacio entre líneas */
+      padding: 0.3em 1em; /* Padding para cada línea */
+      display: flex;
+      justify-content: space-between; /* Espaciar elementos */
+      align-items: baseline; /* Alinear por la base del texto */
+      cursor: default; /* No clicable */
+      width: 100%;
+      box-sizing: border-box;
+      white-space: nowrap; /* Evitar que el texto se divida */
+      overflow: hidden; /* Ocultar desbordamiento */
+      text-overflow: clip; /* No mostrar ellipsis, solo cortar */
+    }
+
+    .bus-option span {
+        font-weight: bold; /* Negrita como en el cartel */
+        color: #ff0000; /* Rojo */
+    }
+
+    .bus-option .bus-option-linea {
+        flex-basis: 25%; /* Ancho para la línea */
+        min-width: 150px; /* Ancho mínimo para la línea */
         text-align: left;
     }
 
-    #stop-results .bus-option .bus-option-destino {
-        flex-basis: 50%; /* Adjust width for destination */
-        text-align: left; /* Align destination to the left */
-        overflow: hidden; /* Hide overflow if text is too long */
-        text-overflow: ellipsis; /* Add ellipsis for overflow */
-        white-space: nowrap; /* Prevent wrapping */
+    .bus-option .bus-option-destino {
+        flex-basis: 60%; /* Ancho para el destino */
+        text-align: left; /* Alinear a la izquierda */
+        padding-left: 1em; /* Espacio entre línea y destino */
+        overflow: hidden;
+        text-overflow: clip; /* Sin ellipsis, cortar */
     }
     
-    #stop-results .bus-option .bus-option-time { /* New class for time */
-        flex-basis: 20%; /* Adjust width for time */
-        min-width: 80px;
-        text-align: right; /* Align time to the right */
-        font-size: 1em; /* Normal font size for time */
+    .bus-option .bus-option-time { 
+        flex-basis: 15%; /* Ancho para el tiempo */
+        min-width: 80px; /* Ancho mínimo para el tiempo */
+        text-align: right; /* Alinear a la derecha */
+        font-size: 1em; /* Tamaño normal para el tiempo */
     }
 
-    .delay-text-stop-list { /* This class will no longer be used for display, but kept for logic if needed */
-        font-size: 0.7em; 
-        font-style: normal; 
-        margin-left: 5px;
-        display: inline-block; 
-    }
-    .delay-text-stop-list.delay {
-        color: yellow; 
-    }
-    .delay-text-stop-list.advance {
-        color: lime; 
-    }
-    .delay-text-stop-list.on-time { 
-        color: cyan; 
-    }
+    /* Mensajes de carga y error */
     .loading-message {
-        color: red;
+        color: #ff0000;
         font-size: 1.2em;
         margin-top: 2em;
+    }
+
+    /* Animación para las flechas >> */
+    @keyframes blink {
+        0%, 49% { opacity: 1; }
+        50%, 100% { opacity: 0; }
+    }
+
+    .blinking-arrows {
+        animation: blink 1s step-end infinite;
     }
   </style>
 </head>
 <body>
-  <div id="stop-results">
-    <h2 id="stop-title">Cargando datos de parada...</h2>
+  <div id="main-container">
+    <div id="header">
+      <img id="bizkaibus-logo" src="https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/refs/heads/main/Bizkaibus_logo.png" alt="Bizkaibus Logo" />
+      <div></div> </div>
+    
+    <h2 id="stop-title"></h2>
+    
     <div id="bus-list">
-      <p class="loading-message">Por favor, espere mientras se carga la información.</p>
+      <p class="loading-message">Cargando información...</p>
     </div>
   </div>
   
   <script>
+    // URLs de los datos GTFS (Global Transit Feed Specification)
     const STOPS_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stops.txt";
     const STOP_TIMES1_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times1.txt";
     const STOP_TIMES2_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/stop_times2.txt";
@@ -108,44 +156,49 @@
     const CALENDAR_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/calendar.txt";
     const CALENDAR_DATES_URL = "https://raw.githubusercontent.com/jaimeeeefer/bizkaibusparadas/main/calendar_dates.txt";
 
+    // Mapas y arrays para almacenar los datos GTFS en memoria
     let stopsData = new Map();
     let tripsData = new Map();
-    let stopTimesData = [];
+    let stopTimesData = []; // Combinación de stop_times1, 2 y 3
     let calendarData = new Map();
     let calendarDatesData = new Map();
-    let busInfoMap = new Map(); 
 
+    // Función para convertir un string de tiempo "HH:MM:SS" a segundos desde medianoche
     function timeToSeconds(timeStr) {
         if (!timeStr || !/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return 0;
         const parts = timeStr.split(':');
         return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
     }
 
-    // Modified to return remaining minutes or 'Ahora'
+    // Función modificada para mostrar el tiempo restante en minutos o ">>"
     function secondsToRemainingTime(totalSeconds) {
         if (totalSeconds === null || isNaN(totalSeconds)) return "N/A";
         
         const now = new Date();
+        // Obtener la hora actual en segundos desde medianoche, considerando la zona horaria local
         const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
         
         let remainingSeconds = totalSeconds - currentTotalSeconds;
         
-        // Handle cases where the bus might be for the next day but close to midnight
-        if (remainingSeconds < -12 * 3600) { // If more than 12 hours behind, assume it's for the next day
+        // Ajustar para buses que cruzan la medianoche
+        if (remainingSeconds < -12 * 3600) { // Si es más de 12 horas antes, asumir que es para el día siguiente
             remainingSeconds += 24 * 3600;
-        } else if (remainingSeconds > 12 * 3600 && totalSeconds < currentTotalSeconds) { // If more than 12 hours ahead, but scheduled time was earlier
+        } else if (remainingSeconds > 12 * 3600 && totalSeconds < currentTotalSeconds) { // Si es más de 12 horas después, pero la hora programada ya pasó
             remainingSeconds -= 24 * 3600;
         }
 
         const remainingMinutes = Math.round(remainingSeconds / 60);
 
-        if (remainingMinutes <= 0) {
-            return "Ahora";
+        if (remainingMinutes <= 0 && remainingMinutes > -2) { // Considerar "Ahora" si está muy cerca o ya pasó un poco
+            return '<span class="blinking-arrows">>></span>';
+        } else if (remainingMinutes < 0) { // Si ya ha pasado significativamente, no mostrar
+            return ''; // O puedes poner "Pasado" o similar
         } else {
-            return `${remainingMinutes} min`;
+            return `${remainingMinutes}`;
         }
     }
 
+    // Carga los datos GTFS desde las URLs
     async function cargarDatosGTFS() {
       try {
         const resStops = await fetch(STOPS_URL);
@@ -240,6 +293,7 @@
       }
     }
 
+    // Obtiene un nombre de parada limpio sin el ID entre paréntesis
     function getCleanStopName(stopId) {
         const stopInfo = stopsData.get(stopId);
         if (stopInfo) {
@@ -250,6 +304,7 @@
         return "Desconocida";
     }
 
+    // Función principal para buscar y mostrar los autobuses en una parada
     async function buscarBusesPorParada(stopId) {
         if (!stopId) {
             document.getElementById('bus-list').innerHTML = `<p class="loading-message">Error: No se proporcionó el código de parada en la URL (ej: ?parada=123).</p>`;
@@ -263,16 +318,16 @@
 
         const busListDiv = document.getElementById("bus-list");
         busListDiv.innerHTML = `<p class="loading-message">Cargando próximos autobuses para la parada ${stopId}...</p>`;
-        document.getElementById('stop-results').style.display = 'block';
+        
         const stopNameForTitle = getCleanStopName(stopId);
-        document.getElementById('stop-title').textContent = `${stopId} ${stopNameForTitle}`;
+        document.getElementById('stop-title').textContent = `${stopId} ${stopNameForTitle.toUpperCase()}`; // Título: ID NOMBRE_PARADA
 
         const now = new Date();
-        const currentDayOfWeek = now.getDay(); 
+        const currentDayOfWeek = now.getDay(); // 0 = Domingo, 1 = Lunes, ...
         const currentYear = now.getFullYear();
         const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
         const currentDay = now.getDate().toString().padStart(2, '0');
-        const currentDate = `${currentYear}${currentMonth}${currentDay}`;
+        const currentDate = `${currentYear}${currentMonth}${currentDay}`; // Formato YYYYMMDD
         const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
         const realTimeActivities = new Map();
@@ -311,6 +366,7 @@
             const serviceEndDate = parseInt(service.end_date);
             const currentFormattedDate = parseInt(currentDate);
 
+            // Verificar si el servicio está activo hoy según el calendario
             if (currentFormattedDate < serviceStartDate || currentFormattedDate > serviceEndDate) {
                 continue; 
             }
@@ -320,11 +376,11 @@
 
             let runsToday = false;
 
-            if (currentException === 1) { 
+            if (currentException === 1) { // Excepción de tipo 1: el servicio se añade para esta fecha
                 runsToday = true;
-            } else if (currentException === 2) { 
+            } else if (currentException === 2) { // Excepción de tipo 2: el servicio se elimina para esta fecha
                 runsToday = false;
-            } else { 
+            } else { // Si no hay excepción, verificar días de la semana
                 switch (currentDayOfWeek) {
                     case 0: runsToday = service.sunday === 1; break; 
                     case 1: runsToday = service.monday === 1; break;
@@ -336,12 +392,14 @@
                 }
             }
             
-            if (!runsToday) continue;
+            if (!runsToday) continue; // Si no se ejecuta hoy, saltar
 
             let estimatedDepartureSeconds = timeToSeconds(st.departure_time);
             
+            // Aplicar el retraso/adelanto si hay datos en tiempo real
             if (realTimeActivities.has(st.trip_id)) {
                 const liveBusData = realTimeActivities.get(st.trip_id);
+                // Buscar la hora programada en la parada donde se reporta el bus en tiempo real
                 const liveBusStopSchedule = stopTimesData.find(
                     rtSt => rtSt.trip_id === st.trip_id && rtSt.stop_id === liveBusData.stopPointRef
                 );
@@ -360,39 +418,36 @@
             }
 
             const currentSeconds = timeToSeconds(currentTime);
-            // Consider buses that departed recently but are still relevant, or are about to depart
-            // A buffer of -5 minutes (300 seconds) is applied to display buses that might have just left
-            // but whose real-time status might still be interesting.
+            // Incluir buses que están por llegar o acaban de pasar (margen de 5 minutos para "Ahora")
             if (estimatedDepartureSeconds >= currentSeconds - 300) { 
                 upcomingBuses.push({
                     linea: trip.route_id,
-                    hora: st.departure_time, // Scheduled time
+                    hora: st.departure_time, // Hora programada
                     estimatedDepartureSeconds: estimatedDepartureSeconds,
-                    estimatedRemainingTime: secondsToRemainingTime(estimatedDepartureSeconds), // Remaining time
+                    estimatedRemainingTime: secondsToRemainingTime(estimatedDepartureSeconds), // Tiempo restante
                     destino: trip.trip_headsign,
                     trip_id: st.trip_id,
                 });
             }
         }
 
+        // Ordenar por tiempo de llegada estimado y filtrar para mostrar solo los 4 próximos
         upcomingBuses.sort((a, b) => a.estimatedDepartureSeconds - b.estimatedDepartureSeconds);
         busListDiv.innerHTML = ""; 
 
         if (upcomingBuses.length > 0) {
-            upcomingBuses.slice(0, 4).forEach(bus => { // Limit to 4 buses as requested
+            upcomingBuses.slice(0, 4).forEach(bus => { // Limitar a 4 autobuses
                 const busOption = document.createElement("div");
                 busOption.classList.add("bus-option");
 
                 let timeDisplay = bus.estimatedRemainingTime;
                 
-                // Adjusting destination length to fit the teletext style
-                let destination = bus.destino.substring(0, 20); // Limit destination length
-                if (bus.destino.length > 20) {
-                    destination += "..."; // Add ellipsis if truncated
-                }
+                // Limitar la longitud del destino para que se ajuste al estilo del teletexto
+                let destination = bus.destino.substring(0, 20).toUpperCase(); 
+                // No añadimos ellipsis para cortar como en el cartel real
 
                 busOption.innerHTML = `
-                    <span class="bus-option-linea">${bus.linea}</span>
+                    <span class="bus-option-linea">${bus.linea.toUpperCase()}</span>
                     <span class="bus-option-destino">${destination}</span>
                     <span class="bus-option-time">${timeDisplay}</span>
                 `;
@@ -403,16 +458,17 @@
         }
     }
 
+    // Cuando la ventana carga, cargar datos GTFS y buscar buses de la parada de la URL
     window.onload = async () => {
-      await cargarDatosGTFS(); // Load GTFS data first
+      await cargarDatosGTFS(); // Cargar datos GTFS primero
 
-      // Get stop ID from URL query parameter
+      // Obtener el ID de la parada de los parámetros de la URL
       const urlParams = new URLSearchParams(window.location.search);
       const stopId = urlParams.get('parada'); // e.g., ?parada=123
 
       buscarBusesPorParada(stopId);
 
-      // Refresh data every 30 seconds
+      // Actualizar los datos cada 30 segundos
       setInterval(() => {
           buscarBusesPorParada(stopId);
       }, 30000); 
