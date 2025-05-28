@@ -499,17 +499,17 @@
                 const prevBus = previousBuses.find(pb => pb.linea === bus.linea && pb.destino === bus.destino);
                 // Announce if new bus appears or if time changes significantly and it's ">>"
                 if (!prevBus) {
-                    let announcement = `Línea ${bus.linea} a ${bus.destino}. `;
+                    let announcement = `Línea ${bus.linea} destino ${bus.destino}. `;
                     if (bus.estimatedRemainingTime.includes('>>')) {
                         announcement += "Salida inmediata.";
                     } else if (!isNaN(parseInt(bus.estimatedRemainingTime))) {
-                        announcement += `${bus.estimatedRemainingTime} minutos.`;
+                        announcement += `A ${bus.estimatedRemainingTime} minutos.`;
                     }
                     speakText(announcement);
                 } else if (prevBus.estimatedRemainingTime !== bus.estimatedRemainingTime) {
                     if (bus.estimatedRemainingTime.includes('>>')) {
                         speakText(`Línea ${bus.linea} destino ${bus.destino}. Salida inmediata.`);
-                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 20 && parseInt(prevBus.estimatedRemainingTime) > 5) {
+                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 20 && parseInt(prevBus.estimatedRemainingTime) > 20) {
                         speakText(`Línea ${bus.linea} destino ${bus.destino}. A ${bus.estimatedRemainingTime} minutos.`);
                     }
                 }
@@ -528,7 +528,7 @@
                 let timeDisplay = bus.estimatedRemainingTime;
                 
                 // Formatear la línea para asegurar la "A" y el destino
-                let formattedLineAndDestination = `${bus.linea.toUpperCase()} ${bus.destino.toUpperCase()}`;
+                let formattedLineAndDestination = `A${bus.linea.toUpperCase()} ${bus.destino.toUpperCase()}`;
                 // Truncar si es demasiado largo
                 if (formattedLineAndDestination.length > 25) { // Ajusta este número según el espacio disponible
                     formattedLineAndDestination = formattedLineAndDestination.substring(0, 25);
