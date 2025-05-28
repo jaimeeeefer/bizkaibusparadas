@@ -238,7 +238,7 @@
 
         if (remainingMinutes <= 0 && remainingMinutes >= -1) { // Considerar "Ahora" si está muy cerca o ya pasó un poco (margen de -2 minutos)
             return '<span class="blinking-arrows">>></span>';
-        } else if (remainingMinutes <= -1) { // Si ya ha pasado significativamente (más de 2 minutos), no mostrar
+        } else if (remainingMinutes <= -2) { // Si ya ha pasado significativamente (más de 2 minutos), no mostrar
             return ''; // O puedes poner "Pasado" o similar
         } else {
             return `${remainingMinutes}`;
@@ -477,7 +477,7 @@
 
             const currentSeconds = timeToSeconds(currentTime);
             // Incluir buses que están por llegar o acaban de pasar (margen de 5 minutos para ">>")
-            if (estimatedDepartureSeconds >= currentSeconds - 300) { 
+            if (estimatedDepartureSeconds >= currentSeconds - 120) { 
                 upcomingBuses.push({
                     linea: trip.route_id,
                     hora: st.departure_time, // Hora programada
@@ -569,7 +569,7 @@
       // Actualizar los datos cada 30 segundos
       setInterval(() => {
           buscarBusesPorParada(stopId);
-      }, 30000); 
+      }, 20000); 
     };
   </script>
 </body>
