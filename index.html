@@ -508,9 +508,9 @@
                     speakText(announcement);
                 } else if (prevBus.estimatedRemainingTime !== bus.estimatedRemainingTime) {
                     if (bus.estimatedRemainingTime.includes('>>')) {
-                        speakText(`Línea ${bus.linea} a ${bus.destino}. Salida inmediata.`);
-                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 5 && parseInt(prevBus.estimatedRemainingTime) > 5) {
-                        speakText(`Línea ${bus.linea} a ${bus.destino}. ${bus.estimatedRemainingTime} minutos.`);
+                        speakText(`Línea ${bus.linea} destino ${bus.destino}. Salida inmediata.`);
+                    } else if (!isNaN(parseInt(bus.estimatedRemainingTime)) && parseInt(bus.estimatedRemainingTime) <= 20 && parseInt(prevBus.estimatedRemainingTime) > 5) {
+                        speakText(`Línea ${bus.linea} destino ${bus.destino}. A ${bus.estimatedRemainingTime} minutos.`);
                     }
                 }
             });
